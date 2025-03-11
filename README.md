@@ -1,4 +1,4 @@
-# Katas ng miming bot
+# SOL_USDC trading bot
 
 ## About the project
 This project is from [RAYDIUM SDK](https://github.com/raydium-io/raydium-sdk) Trading Bot template

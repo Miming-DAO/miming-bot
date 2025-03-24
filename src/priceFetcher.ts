@@ -23,41 +23,39 @@ import { Connection, TransactionMessage, Keypair, VersionedTransaction } from "@
 // }
 
 let basePrice = 100;
-let volatility = 0.01; // 5% max change per cycle
-let trend: "up" | "down" = Math.random() > 0.5 ? "up" : "down"; // Random initial trend
+let volatility = 0.01; 
+let trend: "up" | "down" = Math.random() > 0.5 ? "up" : "down"; 
 let trendDuration = Math.floor(Math.random() * 5) + 1;
 let trendCounter = 0;
 const connection = new Connection("https://api.mainnet-beta.solana.com");
 
-//simulate market prices
+
 export async function fakePriceSol(): Promise<number> {
   return new Promise((resolve) => {
     setTimeout(() => {
       const change = basePrice * (Math.random() * volatility);
 
       if (trend === "up") {
-        basePrice += change; // Increase price
+        basePrice += change; 
       } else {
-        basePrice -= change; // Decrease price
+        basePrice -= change; 
       }
 
       trendCounter++;
 
-      // Change trend after a set duration
       if (trendCounter >= trendDuration) {
-        trend = trend === "up" ? "down" : "up"; // Switch trend
-        trendDuration = Math.floor(Math.random() * 11) + 5; // Reset trend
+        trend = trend === "up" ? "down" : "up"; 
+        trendDuration = Math.floor(Math.random() * 11) + 5; 
         trendCounter = 0;
       }
 
-      resolve(parseFloat(basePrice.toFixed(2))); // round
+      resolve(parseFloat(basePrice.toFixed(2))); 
     }, 1000);
   });
 }
 
-//Websocket for solana price real-time
-export function listenToSolPrice(): Promise<number> {
-  return new Promise((resolve, reject) => {
+export function listenToSolPrice(): Promise<number | null> {
+  return new Promise((resolve) => {
     const ws = new WebSocket("wss://ws-feed.exchange.coinbase.com");
 
     ws.onopen = () => {
@@ -74,21 +72,35 @@ export function listenToSolPrice(): Promise<number> {
         const parsed = JSON.parse(event.data.toString());
 
         if (parsed.type === "ticker" && parsed.price) {
-          ws.close();
-          resolve(parseFloat(parsed.price)); 
+          const price = parseFloat(parsed.price);
+
+          if (!isNaN(price) && price > 0) {
+            ws.close();
+            resolve(price);
+          } else {
+            ws.close();
+            resolve(null);
+          }
         }
-      } catch (error) {
-        reject(error);
+      } catch {
+        ws.close();
+        resolve(null);
       }
     };
 
     ws.onerror = () => {
-      reject("WebSocket error");
+      ws.close();
+      resolve(null);
     };
 
-    ws.onclose = () => {};
+    ws.onclose = () => {
+      resolve(null);
+    };
   });
 }
+
+
+
 
 //solana gas fee
 export async function getSolanaGasFee(): Promise<number> {
@@ -111,10 +123,8 @@ export async function getSolanaGasFee(): Promise<number> {
 
       const gasFeeSOL = feeForMessage.value / 1_000_000_000; // Convert lamports to SOL
 
-      // Fetch SOL/USD price
       const solPriceUSD = await getSolanaPriceUSD();
 
-      // Convert gas fee to USD
       return gasFeeSOL * solPriceUSD;
   } catch {
       return 0;

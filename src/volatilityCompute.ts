@@ -1,30 +1,21 @@
-import { listenToSolPrice } from './priceFetcher';
-
-let numberOfPrices = 10;
+import { prices } from "./swapBot"; 
 
 export async function trackSolPriceChanges() {
-    const prices: number[] = [];
+    if (prices.length < 30) {
+        console.warn(`⚠️ Not enough data for volatility calculation. (${prices.length}/30 prices stored)`);
+        return { positiveVolatility: 0, negativeVolatility: 0 };
+    }
+
     const changes: { positive: number[]; negative: number[] } = { positive: [], negative: [] };
 
-    for (let i = 0; i < numberOfPrices; i++) {
-        const price = await listenToSolPrice();
+    for (let i = 1; i < prices.length; i++) {
+        const change = prices[i] - prices[i - 1];
 
-        if (!price || price <= 0 || isNaN(price)) {
-            console.warn(`⚠️ Skipping invalid price received: ${price}`);
-            continue;
+        if (change > 0) {
+            changes.positive.push(change);
+        } else if (change < 0) {
+            changes.negative.push(change);
         }
-
-        if (prices.length > 0) {
-            const change = price - prices[prices.length - 1];
-
-            if (change > 0) {
-                changes.positive.push(change);
-            } else if (change < 0) {
-                changes.negative.push(change);
-            }
-        }
-
-        prices.push(price);
     }
 
     const positiveVolatility = changes.positive.length > 0

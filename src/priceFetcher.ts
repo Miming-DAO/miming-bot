@@ -66,7 +66,6 @@ export function listenToSolPrice(): Promise<number | null> {
         })
       );
     };
-
     ws.onmessage = (event) => {
       try {
         const parsed = JSON.parse(event.data.toString());
@@ -98,8 +97,6 @@ export function listenToSolPrice(): Promise<number | null> {
     };
   });
 }
-
-
 
 
 //solana gas fee
